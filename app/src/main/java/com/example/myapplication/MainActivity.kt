@@ -1,5 +1,6 @@
 package com.example.myapplication
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
@@ -9,8 +10,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 
 enum class TypeOfLinerInequality {
-    FromMinusBtoAToPlusInfinity ,
-    NotResult ,
+    FromMinusBtoAToPlusInfinity,
+    NotResult,
     XBelongsToEverything,
     FromMinusInfinityToMinusBToA;
     var x: Double? = null
@@ -38,8 +39,54 @@ class LinerInequality {
         return res
     }
 }
+interface LinerInequalityView {
+    fun viewResult(result: TypeOfLinerInequality?)
+    fun showError(error: String)
+}
 
-class MainActivity : AppCompatActivity() {
+class Presenter {
+    private val model = LinerInequality()
+    var linerInequalityView: LinerInequalityView? = null
+    private var lastResult: TypeOfLinerInequality? = null
+    fun click(a: String, b: String) {
+        val mainA = a.toDoubleOrNull()
+        val mainB = b.toDoubleOrNull()
+        if (mainA != null) {
+            if (mainA < Double.MAX_VALUE) {
+                if (mainA > -Double.MAX_VALUE) {
+                    if (mainB != null) {
+                        if (mainB < Double.MAX_VALUE) {
+                            val result = model.linerInequality(mainA, mainB)
+                            lastResult = result
+                            linerInequalityView?.viewResult(lastResult)
+                        } else linerInequalityView?.showError("MAX_VALUE_for_b")
+                    } else linerInequalityView?.showError("b_incorrectly")
+                } else linerInequalityView?.showError("MAX_VALUE_for_a")
+            } else linerInequalityView?.showError("MAX_VALUE_for_a")
+        } else linerInequalityView?.showError("a_incorrectly")
+    }
+    fun afterAttach() {
+        if (lastResult != null)
+            linerInequalityView?.viewResult(lastResult!!)
+    }
+}
+
+class Context private constructor() {
+    private val presenter = Presenter()
+    fun getPresenter(): Presenter {
+        return presenter
+    }
+    companion object {
+        private var context: Context? = null
+        fun get() : Context {
+            if (context == null)
+                context = Context()
+            return context!!
+        }
+    }
+}
+
+class MainActivity : AppCompatActivity(), LinerInequalityView {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -51,42 +98,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val editTextNumberA = findViewById<EditText>(R.id.a)
-        val editTextNumberB = findViewById<EditText>(R.id.b)
+        val presenter = Context.get().getPresenter()
+        presenter.linerInequalityView = this
+        presenter.afterAttach()
 
-        val textViewResult = findViewById<TextView>(R.id.result)
         if (savedInstanceState != null)
-            textViewResult.text = savedInstanceState.getString(RESULT)
+            findViewById<TextView>(R.id.result).text = savedInstanceState.getString(RESULT)
 
-        val buttonResult = findViewById<Button>(R.id.button)
-        val buttonToShare = findViewById<Button>(R.id.buttonToShare)
-
-        buttonResult.setOnClickListener {
-            val textA = editTextNumberA.text
-            val textB = editTextNumberB.text
-            val a = textA.toString().toDoubleOrNull()
-            val b = textB.toString().toDoubleOrNull()
-
-           if (a != null) {
-                if (a < Double.MAX_VALUE) {
-                    if (b != null) {
-                       if (b < Double.MAX_VALUE) {
-                           val linerInequalityForTest = LinerInequality()
-                           when (val res = linerInequalityForTest.linerInequality(a , b)) {
-                               TypeOfLinerInequality.FromMinusBtoAToPlusInfinity -> textViewResult.text = getString(R.string.answer_text) + "(${res.x} ; +∞)"
-                               TypeOfLinerInequality.NotResult -> textViewResult.text = getString(R.string.there_is_one_decision)
-                               TypeOfLinerInequality.XBelongsToEverything -> textViewResult.text = getString(R.string.x_belongs_to_everything)
-                               TypeOfLinerInequality.FromMinusInfinityToMinusBToA -> textViewResult.text = getString(R.string.answer_text) + "(-∞ ; ${res.x})"
-                           }
-                      } else Toast.makeText(this, getString(R.string.MAX_VALUE_for_b), Toast.LENGTH_SHORT).show()
-                    } else Toast.makeText(this, getString(R.string.b_incorrectly), Toast.LENGTH_SHORT).show()
-                } else Toast.makeText(this, getString(R.string.MAX_VALUE_for_a), Toast.LENGTH_SHORT).show()
-            } else Toast.makeText(this, getString(R.string.a_incorrectly), Toast.LENGTH_SHORT).show()
+        findViewById<Button>(R.id.button).setOnClickListener {
+            presenter.click(findViewById<EditText>(R.id.a).text.toString(), findViewById<EditText>(R.id.b).text.toString())
         }
-        buttonToShare.setOnClickListener {
+
+        findViewById<Button>(R.id.buttonToShare).setOnClickListener {
             val intent = Intent()
             intent.action = Intent.ACTION_SEND
-            intent.putExtra(Intent.EXTRA_TEXT, textViewResult.text.toString())
+            intent.putExtra(Intent.EXTRA_TEXT, findViewById<TextView>(R.id.result).text.toString())
             intent.type = "text/plain"
             val intentCreateChooser = Intent.createChooser(intent, null)
             startActivity(intentCreateChooser)
@@ -94,5 +120,26 @@ class MainActivity : AppCompatActivity() {
     }
     companion object {
         const val RESULT = "RESULT"
+    }
+
+    @SuppressLint("SetTextI18n")
+    override fun viewResult(result: TypeOfLinerInequality?) {
+        when (result) {
+            TypeOfLinerInequality.FromMinusBtoAToPlusInfinity -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + "(${result.x} ; +∞)"
+            TypeOfLinerInequality.NotResult -> findViewById<TextView>(R.id.result).text = getString(R.string.there_is_one_decision)
+            TypeOfLinerInequality.XBelongsToEverything -> findViewById<TextView>(R.id.result).text = getString(R.string.x_belongs_to_everything)
+            TypeOfLinerInequality.FromMinusInfinityToMinusBToA -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + "(-∞ ; ${result.x})"
+        }
+    }
+
+    override fun showError(error: String) {
+       when(error) {
+           "MAX_VALUE_for_a" -> Toast.makeText(this, getString(R.string.MAX_VALUE_for_a), Toast.LENGTH_SHORT).show()
+           "MIN_VALUE_for_a" -> Toast.makeText(this, getString(R.string.MIN_VALUE_for_a), Toast.LENGTH_SHORT).show()
+           "MAX_VALUE_for_b" -> Toast.makeText(this, getString(R.string.MAX_VALUE_for_b), Toast.LENGTH_SHORT).show()
+           "MIN_VALUE_for_b" -> Toast.makeText(this, getString(R.string.MIN_VALUE_for_b), Toast.LENGTH_SHORT).show()
+           "b_incorrectly" -> Toast.makeText(this, getString(R.string.b_incorrectly), Toast.LENGTH_SHORT).show()
+           "a_incorrectly" -> Toast.makeText(this, getString(R.string.a_incorrectly), Toast.LENGTH_SHORT).show()
+       }
     }
 }
