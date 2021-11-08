@@ -4,8 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:orientation="vertical"
-    >
+    android:orientation="vertical">
 
     <TextView
         android:id="@+id/result"
@@ -33,7 +32,7 @@
         android:inputType="textPersonName"
         android:minHeight="48dp"
         android:textSize="20sp"
-        android:autofillHints="" />
+         />
 
     <EditText
         android:id="@+id/b"
@@ -44,7 +43,7 @@
         android:inputType="textPersonName"
         android:minHeight="48dp"
         android:textSize="20sp"
-        android:autofillHints="" />
+        />
 
     <Button
         android:id="@+id/button"

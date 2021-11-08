@@ -1,6 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">My Application</string>
-    <string name="ax_b_0"><![CDATA[ax + b < 0]]></string>
+    <string name="ax_b_0"><![CDATA[ax + b > 0]]></string>
     <string name="answer">Answer</string>
     <string name="enter_b">Enter: b</string>
     <string name="enter_a">Enter: a</string>

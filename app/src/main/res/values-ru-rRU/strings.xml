@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Моё приложение</string>
+    <string name="ax_b_0"><![CDATA[ax + b > 0]]></string>
+    <string name="answer">Ответ</string>
+    <string name="enter_b">Введите: b</string>
+    <string name="enter_a">Введите: a</string>
+    <string name="b_incorrectly">Неверно введена переменная b</string>
+    <string name="a_incorrectly">Неверно введена переменная a</string>
+    <string name="result">Ответ:</string>
+    <string name="there_is_one_decision">Нет решения</string>
+    <string name="x_belongs_to_everything">x ∈ R</string>
+    <string name="MAX_VALUE_for_a">Вы ввели слишком большое значение дя переменной a</string>
+    <string name="MIN_VALUE_for_a">Вы ввели слишком маленькое значение дя переменной a</string>
+    <string name="MAX_VALUE_for_b">Вы ввели слишком большое значение дя переменной b</string>
+    <string name="MIN_VALUE_for_b">Вы ввели слишком маленькое значение дя переменной b</string>
+    <string name="answer_text">Ответ: </string>
+    <string name="buttonToShare">Поделится</string>
+</resources>
