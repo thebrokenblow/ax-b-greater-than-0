@@ -16,6 +16,16 @@ enum class TypeOfLinerInequality {
     FromMinusInfinityToMinusBToA;
     var x: Double? = null
 }
+
+enum class TypeOfError {
+    MinValueForB,
+    MaxValueForB,
+    BIncorrectly,
+    MinValueForA,
+    MaxValueForA,
+    AIncorrectly;
+}
+
 class LinerInequality {
     fun linerInequality(a: Double, b: Double) : TypeOfLinerInequality {
         val res: TypeOfLinerInequality
@@ -39,9 +49,10 @@ class LinerInequality {
         return res
     }
 }
+
 interface LinerInequalityView {
     fun viewResult(result: TypeOfLinerInequality?)
-    fun showError(error: String)
+    fun showError(error: TypeOfError)
 }
 
 class Presenter {
@@ -56,14 +67,16 @@ class Presenter {
                 if (mainA > -Double.MAX_VALUE) {
                     if (mainB != null) {
                         if (mainB < Double.MAX_VALUE) {
-                            val result = model.linerInequality(mainA, mainB)
-                            lastResult = result
-                            linerInequalityView?.viewResult(lastResult)
-                        } else linerInequalityView?.showError("MAX_VALUE_for_b")
-                    } else linerInequalityView?.showError("b_incorrectly")
-                } else linerInequalityView?.showError("MAX_VALUE_for_a")
-            } else linerInequalityView?.showError("MAX_VALUE_for_a")
-        } else linerInequalityView?.showError("a_incorrectly")
+                            if (mainB > -Double.MAX_VALUE) {
+                                val result = model.linerInequality(mainA, mainB)
+                                lastResult = result
+                                linerInequalityView?.viewResult(lastResult)
+                            } else linerInequalityView?.showError(TypeOfError.MinValueForB)
+                        } else linerInequalityView?.showError(TypeOfError.MaxValueForB)
+                    } else linerInequalityView?.showError(TypeOfError.BIncorrectly)
+                } else linerInequalityView?.showError(TypeOfError.MinValueForA)
+            } else linerInequalityView?.showError(TypeOfError.MaxValueForA)
+        } else linerInequalityView?.showError(TypeOfError.AIncorrectly)
     }
     fun afterAttach() {
         if (lastResult != null)
@@ -88,12 +101,6 @@ class Context private constructor() {
 
 class MainActivity : AppCompatActivity(), LinerInequalityView {
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        val textView = findViewById<TextView>(R.id.result)
-        outState.putString(RESULT, textView.text.toString())
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -101,9 +108,6 @@ class MainActivity : AppCompatActivity(), LinerInequalityView {
         val presenter = Context.get().getPresenter()
         presenter.linerInequalityView = this
         presenter.afterAttach()
-
-        if (savedInstanceState != null)
-            findViewById<TextView>(R.id.result).text = savedInstanceState.getString(RESULT)
 
         findViewById<Button>(R.id.button).setOnClickListener {
             presenter.click(findViewById<EditText>(R.id.a).text.toString(), findViewById<EditText>(R.id.b).text.toString())
@@ -118,9 +122,6 @@ class MainActivity : AppCompatActivity(), LinerInequalityView {
             startActivity(intentCreateChooser)
         }
     }
-    companion object {
-        const val RESULT = "RESULT"
-    }
 
     @SuppressLint("SetTextI18n")
     override fun viewResult(result: TypeOfLinerInequality?) {
@@ -132,14 +133,14 @@ class MainActivity : AppCompatActivity(), LinerInequalityView {
         }
     }
 
-    override fun showError(error: String) {
+    override fun showError(error: TypeOfError) {
        when(error) {
-           "MAX_VALUE_for_a" -> Toast.makeText(this, getString(R.string.MAX_VALUE_for_a), Toast.LENGTH_SHORT).show()
-           "MIN_VALUE_for_a" -> Toast.makeText(this, getString(R.string.MIN_VALUE_for_a), Toast.LENGTH_SHORT).show()
-           "MAX_VALUE_for_b" -> Toast.makeText(this, getString(R.string.MAX_VALUE_for_b), Toast.LENGTH_SHORT).show()
-           "MIN_VALUE_for_b" -> Toast.makeText(this, getString(R.string.MIN_VALUE_for_b), Toast.LENGTH_SHORT).show()
-           "b_incorrectly" -> Toast.makeText(this, getString(R.string.b_incorrectly), Toast.LENGTH_SHORT).show()
-           "a_incorrectly" -> Toast.makeText(this, getString(R.string.a_incorrectly), Toast.LENGTH_SHORT).show()
+           TypeOfError.MaxValueForA -> Toast.makeText(this, getString(R.string.MAX_VALUE_for_a), Toast.LENGTH_SHORT).show()
+           TypeOfError.MinValueForA -> Toast.makeText(this, getString(R.string.MIN_VALUE_for_a), Toast.LENGTH_SHORT).show()
+           TypeOfError.MaxValueForB -> Toast.makeText(this, getString(R.string.MAX_VALUE_for_b), Toast.LENGTH_SHORT).show()
+           TypeOfError.MinValueForB -> Toast.makeText(this, getString(R.string.MIN_VALUE_for_b), Toast.LENGTH_SHORT).show()
+           TypeOfError.BIncorrectly -> Toast.makeText(this, getString(R.string.b_incorrectly), Toast.LENGTH_SHORT).show()
+           TypeOfError.AIncorrectly -> Toast.makeText(this, getString(R.string.a_incorrectly), Toast.LENGTH_SHORT).show()
        }
     }
 }
