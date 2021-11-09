@@ -16,4 +16,5 @@
     <string name="MIN_VALUE_for_b">Вы ввели слишком маленькое значение дя переменной b</string>
     <string name="answer_text">Ответ: </string>
     <string name="buttonToShare">Поделится</string>
+    <string name="solution_of_a_linear_equation_of_the_form">Решение линейного уравнения вида</string>
 </resources>

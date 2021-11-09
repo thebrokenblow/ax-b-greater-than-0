@@ -126,10 +126,10 @@ class MainActivity : AppCompatActivity(), LinerInequalityView {
     @SuppressLint("SetTextI18n")
     override fun viewResult(result: TypeOfLinerInequality?) {
         when (result) {
-            TypeOfLinerInequality.FromMinusBtoAToPlusInfinity -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + "(${result.x} ; +∞)"
-            TypeOfLinerInequality.NotResult -> findViewById<TextView>(R.id.result).text = getString(R.string.there_is_one_decision)
-            TypeOfLinerInequality.XBelongsToEverything -> findViewById<TextView>(R.id.result).text = getString(R.string.x_belongs_to_everything)
-            TypeOfLinerInequality.FromMinusInfinityToMinusBToA -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + "(-∞ ; ${result.x})"
+            TypeOfLinerInequality.FromMinusBtoAToPlusInfinity -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + " " + "(${result.x} ; +∞)"
+            TypeOfLinerInequality.NotResult -> findViewById<TextView>(R.id.result).text =  getString(R.string.answer_text) + " " + getString(R.string.there_is_one_decision)
+            TypeOfLinerInequality.XBelongsToEverything -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + " " + getString(R.string.x_belongs_to_everything)
+            TypeOfLinerInequality.FromMinusInfinityToMinusBToA -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + " " + "(-∞ ; ${result.x})"
         }
     }
 

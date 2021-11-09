@@ -16,4 +16,5 @@
     <string name="MIN_VALUE_for_b">You entered too small a value for the variable b</string>
     <string name="answer_text">Answer: </string>
     <string name="buttonToShare">To Share</string>
+    <string name="solution_of_a_linear_equation_of_the_form">Solution of a linear equation of the form</string>
 </resources>

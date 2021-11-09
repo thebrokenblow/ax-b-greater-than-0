@@ -4,24 +4,43 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:background="#131222" >
+
+    <TextView
+        android:id="@+id/solution_of_a_linear_equation_of_the_form"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="40dp"
+        android:paddingTop="20dp"
+        android:text="@string/solution_of_a_linear_equation_of_the_form"
+        android:textAlignment="center"
+        android:textColor="#826FAB"
+        android:textSize="17sp"
+        tools:ignore="TextContrastCheck" />
+
+    <TextView
+        android:id="@+id/ax_b_0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="40dp"
+        android:paddingTop="15dp"
+        android:text="@string/ax_b_0"
+        android:textAlignment="center"
+        android:textColor="#826FAB"
+        android:textSize="17sp"
+        tools:ignore="TextContrastCheck" />
 
     <TextView
         android:id="@+id/result"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="40dp"
-        android:hint="@string/result"
-        android:textSize="20sp" />
-
-    <TextView
-        android:id="@+id/text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="40dp"
-        android:text="@string/ax_b_0"
-        android:textAlignment="center"
-        android:textSize="20sp" />
+        android:paddingTop="15dp"
+        android:text="@string/result"
+        android:textColor="#826FAB"
+        android:textSize="17sp"
+        tools:ignore="TextContrastCheck" />
 
     <EditText
         android:id="@+id/a"
@@ -31,8 +50,12 @@
         android:hint="@string/enter_a"
         android:inputType="textPersonName"
         android:minHeight="48dp"
-        android:textSize="20sp"
-         />
+        android:paddingTop="15dp"
+        android:textColor="#826FAB"
+        android:textColorHint="#826FAB"
+        android:textSize="17sp"
+        tools:ignore="TextContrastCheck"
+        android:importantForAutofill="no" />
 
     <EditText
         android:id="@+id/b"
@@ -42,19 +65,25 @@
         android:hint="@string/enter_b"
         android:inputType="textPersonName"
         android:minHeight="48dp"
-        android:textSize="20sp"
-        />
+        android:paddingTop="15dp"
+        android:textColor="#826FAB"
+        android:textColorHint="#826FAB"
+        android:textSize="17sp"
+        tools:ignore="TextContrastCheck"
+        android:importantForAutofill="no" />
 
     <Button
         android:id="@+id/button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/answer"/>
+        android:text="@string/answer"
+        android:textSize="15sp" />
 
     <Button
         android:id="@+id/buttonToShare"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/buttonToShare"/>
+        android:text="@string/buttonToShare"
+        android:textSize="15sp" />
 
 </LinearLayout>
