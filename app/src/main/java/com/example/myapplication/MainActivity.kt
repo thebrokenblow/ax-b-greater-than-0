@@ -8,6 +8,37 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.room.*
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+
+@Entity
+data class LinerInequalityRoom(
+    @ColumnInfo(name = "result") val result: String,
+) {
+    @PrimaryKey(autoGenerate = true)
+    var id: Int = 0
+}
+
+@Dao
+interface LinerInequalityDao {
+
+    @Query("SELECT * FROM LinerInequalityRoom")
+    fun getAll(): LinerInequalityRoom
+
+    @Insert
+    fun insertAll(vararg linerInequalityResult: LinerInequalityRoom)
+
+    @Query("DELETE FROM LinerInequalityRoom")
+    fun dropAll()
+}
+
+@Database(entities = [LinerInequalityRoom::class], version = 1)
+abstract class AppDatabase : RoomDatabase() {
+    abstract fun linerInequalityDao(): LinerInequalityDao
+}
 
 enum class TypeOfLinerInequality {
     FromMinusBtoAToPlusInfinity,
@@ -50,16 +81,19 @@ class LinerInequality {
     }
 }
 
+@DelicateCoroutinesApi
 interface LinerInequalityView {
-    fun viewResult(result: TypeOfLinerInequality?)
+    fun viewResult(result: TypeOfLinerInequality?, mainActivity: MainActivity)
     fun showError(error: TypeOfError)
 }
 
+@DelicateCoroutinesApi
 class Presenter {
     private val model = LinerInequality()
     var linerInequalityView: LinerInequalityView? = null
     private var lastResult: TypeOfLinerInequality? = null
-    fun click(a: String, b: String) {
+    @DelicateCoroutinesApi
+    fun click(a: String, b: String, mainActivity: MainActivity) {
         val mainA = a.toDoubleOrNull()
         val mainB = b.toDoubleOrNull()
         if (mainA != null) {
@@ -70,7 +104,7 @@ class Presenter {
                             if (mainB > -Double.MAX_VALUE) {
                                 val result = model.linerInequality(mainA, mainB)
                                 lastResult = result
-                                linerInequalityView?.viewResult(lastResult)
+                                linerInequalityView?.viewResult(result, mainActivity)
                             } else linerInequalityView?.showError(TypeOfError.MinValueForB)
                         } else linerInequalityView?.showError(TypeOfError.MaxValueForB)
                     } else linerInequalityView?.showError(TypeOfError.BIncorrectly)
@@ -78,12 +112,13 @@ class Presenter {
             } else linerInequalityView?.showError(TypeOfError.MaxValueForA)
         } else linerInequalityView?.showError(TypeOfError.AIncorrectly)
     }
-    fun afterAttach() {
+    fun afterAttach(mainActivity: MainActivity) {
         if (lastResult != null)
-            linerInequalityView?.viewResult(lastResult!!)
+            linerInequalityView?.viewResult(lastResult!!, mainActivity)
     }
 }
 
+@DelicateCoroutinesApi
 class Context private constructor() {
     private val presenter = Presenter()
     fun getPresenter(): Presenter {
@@ -99,18 +134,30 @@ class Context private constructor() {
     }
 }
 
+@DelicateCoroutinesApi
 class MainActivity : AppCompatActivity(), LinerInequalityView {
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         val presenter = Context.get().getPresenter()
         presenter.linerInequalityView = this
-        presenter.afterAttach()
+        presenter.afterAttach(this)
+
+        val db = Room.databaseBuilder(applicationContext, AppDatabase::class.java,"linerInequality").build()
+        val linerInequalityDao = db.linerInequalityDao()
+
+        GlobalScope.launch(Dispatchers.IO) {
+            val result = LinerInequalityRoom(linerInequalityDao.getAll().result)
+            launch(Dispatchers.Main) {
+                findViewById<TextView>(R.id.result).text = result.result
+            }
+        }
 
         findViewById<Button>(R.id.button).setOnClickListener {
-            presenter.click(findViewById<EditText>(R.id.a).text.toString(), findViewById<EditText>(R.id.b).text.toString())
+            presenter.click(findViewById<EditText>(R.id.a).text.toString(), findViewById<EditText>(R.id.b).text.toString(), this)
         }
 
         findViewById<Button>(R.id.buttonToShare).setOnClickListener {
@@ -124,12 +171,61 @@ class MainActivity : AppCompatActivity(), LinerInequalityView {
     }
 
     @SuppressLint("SetTextI18n")
-    override fun viewResult(result: TypeOfLinerInequality?) {
+    override fun viewResult(result: TypeOfLinerInequality?, mainActivity: MainActivity) {
         when (result) {
-            TypeOfLinerInequality.FromMinusBtoAToPlusInfinity -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + " " + "(${result.x} ; +∞)"
-            TypeOfLinerInequality.NotResult -> findViewById<TextView>(R.id.result).text =  getString(R.string.answer_text) + " " + getString(R.string.there_is_one_decision)
-            TypeOfLinerInequality.XBelongsToEverything -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + " " + getString(R.string.x_belongs_to_everything)
-            TypeOfLinerInequality.FromMinusInfinityToMinusBToA -> findViewById<TextView>(R.id.result).text = getString(R.string.answer_text) + " " + "(-∞ ; ${result.x})"
+
+            TypeOfLinerInequality.FromMinusBtoAToPlusInfinity -> {
+
+                val resultFromMinusBtoAToPlusInfinity = getString(R.string.answer_text) + " " + "(${result.x} ; +∞)"
+                findViewById<TextView>(R.id.result).text = resultFromMinusBtoAToPlusInfinity
+
+                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
+                val linerInequalityDao = db.linerInequalityDao()
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    linerInequalityDao.dropAll()
+                    linerInequalityDao.insertAll(LinerInequalityRoom(resultFromMinusBtoAToPlusInfinity))
+                }
+            }
+
+            TypeOfLinerInequality.NotResult -> {
+
+                val resultNotResult =  getString(R.string.answer_text) + " " + getString(R.string.there_is_one_decision)
+                findViewById<TextView>(R.id.result).text = resultNotResult
+                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
+                val linerInequalityDao = db.linerInequalityDao()
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    linerInequalityDao.dropAll()
+                    linerInequalityDao.insertAll(LinerInequalityRoom(resultNotResult))
+                }
+            }
+            TypeOfLinerInequality.XBelongsToEverything -> {
+
+                val resultXBelongsToEverything = getString(R.string.answer_text) + " " + getString(R.string.x_belongs_to_everything)
+                findViewById<TextView>(R.id.result).text = resultXBelongsToEverything
+                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
+                val linerInequalityDao = db.linerInequalityDao()
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    linerInequalityDao.dropAll()
+                    linerInequalityDao.insertAll(LinerInequalityRoom(resultXBelongsToEverything))
+                }
+            }
+
+            TypeOfLinerInequality.FromMinusInfinityToMinusBToA -> {
+
+                val resultFromMinusInfinityToMinusBToA = getString(R.string.answer_text) + " " + "(-∞ ; ${result.x})"
+                findViewById<TextView>(R.id.result).text = resultFromMinusInfinityToMinusBToA
+
+                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
+                val linerInequalityDao = db.linerInequalityDao()
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    linerInequalityDao.dropAll()
+                    linerInequalityDao.insertAll(LinerInequalityRoom(resultFromMinusInfinityToMinusBToA))
+                }
+            }
         }
     }
 
