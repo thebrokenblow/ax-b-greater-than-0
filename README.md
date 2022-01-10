@@ -1,5 +1,5 @@
 <div style="text-align: center;">
-    <img alt="Main Activity" align="center" src=""/>
+    <img alt="Main Activity" align="center" src="https://github.com/thebrokenblow/ax-b-greater-than-0/blob/master/photo/Screenshot.jpg?raw=true"/>
 </div> 
 
 <h2 align="center"> ax + b > 0 </h2>
@@ -26,7 +26,7 @@
 
 3. **Open the source code and start editing!**
 
-    <img alt="IDE" align="center" src="" />
+    <img alt="IDE" align="center" src="https://github.com/thebrokenblow/ax-b-greater-than-0/blob/master/photo/IDE.PNG?raw=true" />
 
 4.**Finish!**
 
