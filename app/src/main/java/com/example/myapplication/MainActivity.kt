@@ -17,6 +17,8 @@ import kotlinx.coroutines.launch
 @Entity
 data class LinerInequalityRoom(
     @ColumnInfo(name = "result") val result: String,
+    @ColumnInfo(name = "value_a") val valueA: String,
+    @ColumnInfo(name = "value_b") val valueB: String,
 ) {
     @PrimaryKey(autoGenerate = true)
     var id: Int = 0
@@ -26,7 +28,7 @@ data class LinerInequalityRoom(
 interface LinerInequalityDao {
 
     @Query("SELECT * FROM LinerInequalityRoom")
-    fun getAll(): LinerInequalityRoom
+    fun getAll(): LinerInequalityRoom?
 
     @Insert
     fun insertAll(vararg linerInequalityResult: LinerInequalityRoom)
@@ -59,31 +61,31 @@ enum class TypeOfError {
 
 class LinerInequality {
     fun linerInequality(a: Double, b: Double) : TypeOfLinerInequality {
-        val res: TypeOfLinerInequality
+        val result: TypeOfLinerInequality
         when {
             a > 0 -> {
-                res = TypeOfLinerInequality.FromMinusBtoAToPlusInfinity
-                res.x = -b / a
+                result = TypeOfLinerInequality.FromMinusBtoAToPlusInfinity
+                result.x = -b / a
             }
             a == 0.0 -> {
-                res = if (b <= 0) {
+                result = if (b <= 0) {
                     TypeOfLinerInequality.NotResult
                 } else {
                     TypeOfLinerInequality.XBelongsToEverything
                 }
             }
             else -> {
-                res = TypeOfLinerInequality.FromMinusInfinityToMinusBToA
-                res.x = -b / a
+                result = TypeOfLinerInequality.FromMinusInfinityToMinusBToA
+                result.x = -b / a
             }
         }
-        return res
+        return result
     }
 }
 
 @DelicateCoroutinesApi
 interface LinerInequalityView {
-    fun viewResult(result: TypeOfLinerInequality?, mainActivity: MainActivity)
+    fun viewResult(result: TypeOfLinerInequality?, applicationContext: android.content.Context)
     fun showError(error: TypeOfError)
 }
 
@@ -93,7 +95,7 @@ class Presenter {
     var linerInequalityView: LinerInequalityView? = null
     private var lastResult: TypeOfLinerInequality? = null
     @DelicateCoroutinesApi
-    fun click(a: String, b: String, mainActivity: MainActivity) {
+    fun click(a: String, b: String, applicationContext: android.content.Context) {
         val mainA = a.toDoubleOrNull()
         val mainB = b.toDoubleOrNull()
         if (mainA != null) {
@@ -104,7 +106,7 @@ class Presenter {
                             if (mainB > -Double.MAX_VALUE) {
                                 val result = model.linerInequality(mainA, mainB)
                                 lastResult = result
-                                linerInequalityView?.viewResult(result, mainActivity)
+                                linerInequalityView?.viewResult(result, applicationContext)
                             } else linerInequalityView?.showError(TypeOfError.MinValueForB)
                         } else linerInequalityView?.showError(TypeOfError.MaxValueForB)
                     } else linerInequalityView?.showError(TypeOfError.BIncorrectly)
@@ -112,9 +114,9 @@ class Presenter {
             } else linerInequalityView?.showError(TypeOfError.MaxValueForA)
         } else linerInequalityView?.showError(TypeOfError.AIncorrectly)
     }
-    fun afterAttach(mainActivity: MainActivity) {
+    fun afterAttach(applicationContext: android.content.Context) {
         if (lastResult != null)
-            linerInequalityView?.viewResult(lastResult!!, mainActivity)
+            linerInequalityView?.viewResult(lastResult!!, applicationContext)
     }
 }
 
@@ -142,22 +144,37 @@ class MainActivity : AppCompatActivity(), LinerInequalityView {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val textViewResult = findViewById<TextView>(R.id.result)
+        val textViewValueA = findViewById<EditText>(R.id.valueA)
+        val textViewValueB = findViewById<EditText>(R.id.valueB)
+
+
         val presenter = Context.get().getPresenter()
         presenter.linerInequalityView = this
-        presenter.afterAttach(this)
+        presenter.afterAttach(applicationContext)
 
-        val db = Room.databaseBuilder(applicationContext, AppDatabase::class.java,"linerInequality").build()
-        val linerInequalityDao = db.linerInequalityDao()
+        val linerInequalityDao = connectWithDataBase(applicationContext)
 
         GlobalScope.launch(Dispatchers.IO) {
-            val result = LinerInequalityRoom(linerInequalityDao.getAll().result)
-            launch(Dispatchers.Main) {
-                findViewById<TextView>(R.id.result).text = result.result
+            val valuesFromDataBase = linerInequalityDao.getAll()
+            if (valuesFromDataBase != null) {
+                val result = LinerInequalityRoom(valuesFromDataBase.result,
+                                                 valuesFromDataBase.valueA,
+                                                 valuesFromDataBase.valueB)
+                launch(Dispatchers.Main) {
+                    textViewResult.text = result.result
+                    textViewValueA.setText(result.valueA)
+                    textViewValueB.setText(result.valueB)
+                }
             }
         }
 
         findViewById<Button>(R.id.button).setOnClickListener {
-            presenter.click(findViewById<EditText>(R.id.a).text.toString(), findViewById<EditText>(R.id.b).text.toString(), this)
+            presenter.click(
+                textViewValueA.text.toString(),
+                textViewValueB.text.toString(),
+                this
+            )
         }
 
         findViewById<Button>(R.id.buttonToShare).setOnClickListener {
@@ -170,60 +187,50 @@ class MainActivity : AppCompatActivity(), LinerInequalityView {
         }
     }
 
+    private fun connectWithDataBase(applicationContext: android.content.Context): LinerInequalityDao =
+        Room.databaseBuilder(applicationContext, AppDatabase::class.java,"linerInequality").build().linerInequalityDao()
+
+    private fun dropAndInsertDate(applicationContext: android.content.Context, textViewResult: TextView, valueA: String, valueB: String) {
+        val linerInequalityDao = connectWithDataBase(applicationContext)
+        linerInequalityDao.dropAll()
+        linerInequalityDao.insertAll(LinerInequalityRoom(textViewResult.text.toString(), valueA, valueB))
+    }
+
     @SuppressLint("SetTextI18n")
-    override fun viewResult(result: TypeOfLinerInequality?, mainActivity: MainActivity) {
+    override fun viewResult(result: TypeOfLinerInequality?, applicationContext: android.content.Context) {
+        val valueA = findViewById<EditText>(R.id.valueA).text.toString()
+        val valueB = findViewById<EditText>(R.id.valueB).text.toString()
+        val textViewResult = findViewById<TextView>(R.id.result)
         when (result) {
 
             TypeOfLinerInequality.FromMinusBtoAToPlusInfinity -> {
-
-                val resultFromMinusBtoAToPlusInfinity = getString(R.string.answer_text) + " " + "(${result.x} ; +∞)"
-                findViewById<TextView>(R.id.result).text = resultFromMinusBtoAToPlusInfinity
-
-                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
-                val linerInequalityDao = db.linerInequalityDao()
+                textViewResult.text = getString(R.string.result) + " " + "(${result.x} ; +∞)"
 
                 GlobalScope.launch(Dispatchers.IO) {
-                    linerInequalityDao.dropAll()
-                    linerInequalityDao.insertAll(LinerInequalityRoom(resultFromMinusBtoAToPlusInfinity))
+                    dropAndInsertDate(applicationContext, textViewResult, valueA, valueB)
                 }
             }
 
             TypeOfLinerInequality.NotResult -> {
-
-                val resultNotResult =  getString(R.string.answer_text) + " " + getString(R.string.there_is_one_decision)
-                findViewById<TextView>(R.id.result).text = resultNotResult
-                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
-                val linerInequalityDao = db.linerInequalityDao()
+                textViewResult.text = getString(R.string.result) + " " + getString(R.string.there_is_one_decision)
 
                 GlobalScope.launch(Dispatchers.IO) {
-                    linerInequalityDao.dropAll()
-                    linerInequalityDao.insertAll(LinerInequalityRoom(resultNotResult))
+                    dropAndInsertDate(applicationContext, textViewResult, valueA, valueB)
                 }
             }
             TypeOfLinerInequality.XBelongsToEverything -> {
-
-                val resultXBelongsToEverything = getString(R.string.answer_text) + " " + getString(R.string.x_belongs_to_everything)
-                findViewById<TextView>(R.id.result).text = resultXBelongsToEverything
-                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
-                val linerInequalityDao = db.linerInequalityDao()
+                textViewResult.text = getString(R.string.result) + " " + getString(R.string.x_belongs_to_everything)
 
                 GlobalScope.launch(Dispatchers.IO) {
-                    linerInequalityDao.dropAll()
-                    linerInequalityDao.insertAll(LinerInequalityRoom(resultXBelongsToEverything))
+                    dropAndInsertDate(applicationContext, textViewResult, valueA, valueB)
                 }
             }
 
             TypeOfLinerInequality.FromMinusInfinityToMinusBToA -> {
-
-                val resultFromMinusInfinityToMinusBToA = getString(R.string.answer_text) + " " + "(-∞ ; ${result.x})"
-                findViewById<TextView>(R.id.result).text = resultFromMinusInfinityToMinusBToA
-
-                val db = Room.databaseBuilder(mainActivity, AppDatabase::class.java,"linerInequality").build()
-                val linerInequalityDao = db.linerInequalityDao()
+                textViewResult.text = getString(R.string.result) + " " + "(-∞ ; ${result.x})"
 
                 GlobalScope.launch(Dispatchers.IO) {
-                    linerInequalityDao.dropAll()
-                    linerInequalityDao.insertAll(LinerInequalityRoom(resultFromMinusInfinityToMinusBToA))
+                    dropAndInsertDate(applicationContext, textViewResult, valueA, valueB)
                 }
             }
         }
