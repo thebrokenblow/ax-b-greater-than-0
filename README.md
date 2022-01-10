@@ -12,7 +12,7 @@
 
 ## 🚀 Quick start
 
-1. **Create a My Company site.**
+1. **Create a Mobile application.**
 
     Use `git` and the ax + b > 0 to create a new project
 
